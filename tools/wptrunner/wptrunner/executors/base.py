@@ -29,7 +29,7 @@ def executor_kwargs(test_type, server_config, cache_manager, run_info_data,
                        "timeout_multiplier": timeout_multiplier,
                        "debug_info": kwargs["debug_info"]}
 
-    if test_type == "reftest":
+    if test_type in ("reftest", "print-reftest"):
         executor_kwargs["screenshot_cache"] = cache_manager.dict()
 
     if test_type == "wdspec":
@@ -98,8 +98,44 @@ def _ensure_hash_in_reftest_screenshots(extra):
         if type(item) != dict:
             # Skip relation strings.
             continue
+        #TODO - Don't just take the final hash/screenshot, take a non-matching one
         if "hash" not in item:
             item["hash"] = hash_screenshots(item["screenshot"])
+            item["hash"] = item["hash"][-1]
+        if "screenshot" in item:
+            item["screenshot"] = item["screenshot"][-1]
+
+
+def get_pages(ranges_value, total_pages):
+    if not ranges_value:
+        return set(range(1, total_pages + 1))
+
+    range_parts = [item.strip() for item in ranges_value.split(",")]
+
+    rv = set()
+    for range_part in range_parts:
+        if "-" not in item:
+            try:
+                part = int(range_part)
+            except ValueError:
+                raise ValueError("Page ranges must be either <int> or <int> '-' <int> (found %s)" % range_part)
+            rv.add(part)
+        else:
+            parts = [item.strip() for item in range_part.split("-")]
+            if len(parts) != 2:
+                raise ValueError("Page ranges must be either <int> or <int> '-' <int> (found %s)" % range_part)
+            range_limits = []
+            for part in parts:
+                if part:
+                    try:
+                        range_limits.append(int(part))
+                    except ValueError:
+                        raise ValueError("Page ranges must be either <int> or <int> '-' <int> (found %s)" % range_part)
+                else:
+                    range_limits.append(total_pages)
+            print range_limits
+            rv |= set(range(range_limits[0], range_limits[1] + 1))
+    return rv
 
 
 def reftest_result_converter(self, test, result):
@@ -126,6 +162,7 @@ def pytest_result_converter(self, test, data):
 
 def crashtest_result_converter(self, test, result):
     return test.result_cls(**result), []
+
 
 class ExecutorException(Exception):
     def __init__(self, status, message):
@@ -327,6 +364,10 @@ class CrashtestExecutor(TestExecutor):
     convert_result = crashtest_result_converter
 
 
+class PrintRefTestExecutor(TestExecutor):
+    convert_result = reftest_result_converter
+
+
 class RefTestImplementation(object):
     def __init__(self, executor):
         self.timeout_multiplier = executor.timeout_multiplier
@@ -405,10 +446,10 @@ class RefTestImplementation(object):
                          (max_per_channel == 0 and allowed_per_channel[0] == 0) or
                          (allowed_per_channel[0] <= max_per_channel <= allowed_per_channel[1] and
                           allowed_different[0] <= pixels_different <= allowed_different[1]))
-            result = equal if relation == "==" else not equal
-            if not result:
-                return False
-        return True
+            if not equal:
+                return False if relation == "==" else True
+        # All screenshots were equal within the fuzziness
+        return True if relation == "==" else False
 
     def get_differences(self, screenshots, urls):
         from PIL import Image, ImageChops, ImageStat
