@@ -879,7 +879,7 @@ class MarionetteRefTestExecutor(RefTestExecutor):
         if screenshot.startswith("data:image/png;base64,"):
             screenshot = screenshot.split(",", 1)[1]
 
-        return screenshot
+        return [screenshot]
 
 
 class InternalRefTestImplementation(RefTestImplementation):
@@ -916,6 +916,9 @@ class InternalRefTestImplementation(RefTestImplementation):
                                                               "timeout": timeout,
                                                               "width": 800,
                                                               "height": 600})["value"]
+        for item in rv["extra"].get("reftest_screenshots", []):
+            if "screenshot" in item:
+                item["screenshot"] = [item["screenshot"]]
         return rv
 
     def get_references(self, root_test, node):

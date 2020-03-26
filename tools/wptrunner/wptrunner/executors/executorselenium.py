@@ -420,4 +420,4 @@ class SeleniumRefTestExecutor(RefTestExecutor):
         if screenshot.startswith("data:image/png;base64,"):
             screenshot = screenshot.split(",", 1)[1]
 
-        return screenshot
+        return [screenshot]

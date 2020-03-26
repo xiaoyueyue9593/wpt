@@ -286,7 +286,7 @@ class ServoWebDriverRefTestExecutor(RefTestExecutor):
     def _screenshot(self, session, url, timeout):
         session.url = url
         session.execute_async_script(self.wait_script)
-        return session.screenshot()
+        return [session.screenshot()]
 
     def on_environment_change(self, new_environment):
         self.protocol.session.extension.change_prefs(
