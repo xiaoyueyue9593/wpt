@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <title>TiltX/TiltY to Azimuth/Altitude</title>
+    <script src="/resources/testharness.js"></script>
+    <script src="/resources/testharnessreport.js"></script>
+  </head>
+  <body>
+    <script>
+      if(window.test){
+          [{tiltX:0,tiltY:0, azimuth:0, altitude:Math.PI/2},
+           {tiltX:0, tiltY:90, azimuth:Math.PI/2, altitude:0},
+           {tiltX:0, tiltY:-90, azimuth:3*Math.PI/2, altitude:0},
+           {tiltX:90,tiltY:0, azimuth:0, altitude:0},
+           {tiltX:90, tiltY:90, azimuth:0, altitude:0},
+           {tiltX:90, tiltY:-90, azimuth:0, altitude:0},
+           {tiltX:-90,tiltY:0, azimuth:Math.PI, altitude:0},
+           {tiltX:-90, tiltY:90, azimuth:0, altitude:0},
+           {tiltX:-90, tiltY:-90, azimuth:0, altitude:0},
+           {tiltX:0, tiltY:45, azimuth:Math.PI/2, altitude:Math.PI/4},
+           {tiltX:0, tiltY:-45, azimuth:3*Math.PI/2, altitude:Math.PI/4},
+           {tiltX:45, tiltY:0, azimuth:0, altitude:Math.PI/4},
+           {tiltX:-45, tiltY:0, azimuth:Math.PI, altitude:Math.PI/4},].forEach(
+            (el)=>{
+              test(function(){
+                var event = new PointerEvent("pointerdown",{pointerId:"pointer1", tiltX:el.tiltX, tiltY:el.tiltY});
+                assert_equals(event.azimuthAngle, el.azimuth, "azimuth angle should be " + el.azimuth);
+                assert_equals(event.altitudeAngle, el.altitude, "altitude angle should be " + el.altitude);
+              }, `tiltX,tiltY to azimuth/altitude when tiltX=${el.tiltX} and tiltY=${el.tiltY}`);
+            });
+
+           test(function(){
+              var event = new PointerEvent("pointerdown",{});
+              assert_equals(event.azimuthAngle, 0, "azimuth angle should be 0");
+              assert_equals(event.altitudeAngle, Math.PI/2, "altitude angle should be " + Math.PI/2);
+           }, "tiltX/tiltY to azimuth/altitude when tiltX/tiltY are not populated");
+
+           [{azimuth:0, altitude:Math.PI/2, tiltX:0,tiltY:0},
+           {azimuth:Math.PI/2, altitude:0, tiltX:0, tiltY:90},
+           {azimuth:3*Math.PI/2, altitude:0, tiltX:0, tiltY:-90},
+           {azimuth:0, altitude:0, tiltX:90,tiltY:0},
+           {azimuth:Math.PI, altitude:0, tiltX:-90,tiltY:0},
+           {azimuth:Math.PI/2, altitude:Math.PI/4, tiltX:0, tiltY:45},
+           {azimuth:3*Math.PI/2, altitude:Math.PI/4, tiltX:0, tiltY:-45},
+           {azimuth:0, altitude:Math.PI/4, tiltX:45, tiltY:0},
+           {azimuth:Math.PI, altitude:Math.PI/4, tiltX:-45, tiltY:0},].forEach(
+            (el)=>{
+              test(function(){
+                var event = new PointerEvent("pointerdown",{pointerId:"pointer1", azimuthAngle:el.azimuth, altitudeAngle:el.altitude});
+                assert_equals(event.tiltX, el.tiltX, "tiltX angle should be " + el.tiltX);
+                assert_equals(event.tiltY, el.tiltY, "tiltY angle should be " + el.tiltY);
+              }, `azimuth/altitude to tiltX/tiltY when azimuth=${el.azimuth} and altitude=${el.altitude}`);
+            });
+      }
+    </script>
+  </body>
+</html>
