@@ -102,7 +102,7 @@ jobs:
   - template: tools/ci/azure/update_manifest.yml
   - script: no_proxy='*' ./wpt run --yes --no-manifest-update --manifest MANIFEST.json --metadata infrastructure/metadata/ --log-mach - --log-mach-level info --channel preview safari infrastructure/ || true
     displayName: 'Run tests (Safari Technology Preview)'
-  - script: sudo sysdiagnose -f $(Build.ArtifactStagingDirectory)/ -b
+  - script: sudo sysdiagnose -f $(Build.ArtifactStagingDirectory)/ -b -u
     displayName: 'Run sysdiagnose'
   - task: PublishBuildArtifacts@1
     displayName: 'Publish results'
