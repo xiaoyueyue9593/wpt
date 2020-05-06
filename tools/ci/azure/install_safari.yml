@@ -5,7 +5,15 @@ parameters:
 steps:
 - ${{ if eq(parameters.channel, 'preview') }}:
   - script: |
+      echo "logging ~/Library and ~/Library/WebDriver"
+      ls -l -@ ~/Library || true
+      ls -l -@ ~/Library/WebDriver || true
+      echo "Installing STP"
       HOMEBREW_NO_AUTO_UPDATE=1 brew cask install tools/ci/azure/safari-technology-preview.rb
+      echo "logging ~/Library and ~/Library/WebDriver again"
+      ls -l -@ ~/Library || true
+      ls -l -@ ~/Library/WebDriver || true
+      echo "Calling safaridriver --enable"
       sudo "/Applications/Safari Technology Preview.app/Contents/MacOS/safaridriver" --enable
       defaults write com.apple.SafariTechnologyPreview WebKitJavaScriptCanOpenWindowsAutomatically 1
       defaults write com.apple.SafariTechnologyPreview ExperimentalServerTimingEnabled 1

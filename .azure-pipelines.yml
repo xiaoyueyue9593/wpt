@@ -98,16 +98,18 @@ jobs:
   - template: tools/ci/azure/install_fonts.yml
   - template: tools/ci/azure/install_certs.yml
   - template: tools/ci/azure/install_safari.yml
-  - template: tools/ci/azure/update_hosts.yml
-  - template: tools/ci/azure/update_manifest.yml
   - script: defaults find DidMigrateWebDriverAllowRemoteAutomation || true
     displayName: 'DidMigrateWebDriverAllowRemoteAutomation'
   - script: ls -l ~/Library || true
     displayName: 'ls Library'
   - script: ls -l ~/Library/WebDriver || true
     displayName: 'ls Library/WebDriver'
+  - script: find ~/ -name com.apple.SafariTechnologyPreview.plist || true
+    displayName: 'find com.apple.SafariTechnologyPreview.plist'
   - script: cat ~/Library/WebDriver/com.apple.SafariTechnologyPreview.plist || true
     displayName: 'com.apple.SafariTechnologyPreview.plist'
+  - template: tools/ci/azure/update_hosts.yml
+  - template: tools/ci/azure/update_manifest.yml
   - script: no_proxy='*' ./wpt run --yes --no-manifest-update --manifest MANIFEST.json --metadata infrastructure/metadata/ --log-mach - --log-mach-level info --channel preview safari infrastructure/ || true
     displayName: 'Run tests (Safari Technology Preview)'
   - script: sudo sysdiagnose -f $(Build.ArtifactStagingDirectory)/ -b -u
