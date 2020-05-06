@@ -106,6 +106,8 @@ jobs:
     displayName: 'ls Library/WebDriver'
   - script: find ~/ -name com.apple.SafariTechnologyPreview.plist || true
     displayName: 'find com.apple.SafariTechnologyPreview.plist'
+  - script: cat ~/Library/Preferences/com.apple.SafariTechnologyPreview.plist || true
+    displayName: 'cat the other one'
   - script: cat ~/Library/WebDriver/com.apple.SafariTechnologyPreview.plist || true
     displayName: 'com.apple.SafariTechnologyPreview.plist'
   - template: tools/ci/azure/update_hosts.yml
