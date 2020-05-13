@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<title>Base URLs used in resolving specifiers in dynamic imports</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/common/redirect.py?location=http://{{domains[www1]}}:{{ports[http][0]}}/html/semantics/scripting-1/the-script-element/module/dynamic-import/scripts/base-url.js"></script>
+<script src="/common/redirect.py?location=http://{{domains[www1]}}:{{ports[http][0]}}/html/semantics/scripting-1/the-script-element/module/dynamic-import/scripts/base-url.js%3Fpipe=header(Access-Control-Allow-Origin,*)" type="module"></script>
