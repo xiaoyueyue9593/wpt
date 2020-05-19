@@ -1,0 +1,212 @@
+
+<!doctype html>
+<meta charset=utf-8>
+<meta name=timeout content=long>
+<title>reporting same origin with report-to</title>
+<script src=/resources/testharness.js></script>
+<script src=/resources/testharnessreport.js></script>
+<script src="/common/get-host-info.sub.js"></script>
+<script src="resources/common.js"></script>
+<script src="resources/reporting-common.js"></script>
+
+<div id=log></div>
+<script>
+
+let tests = [
+  // popup origin, popup COOP, popup COEP, expected opener, expected reports, unwanted reports
+  // Open and navigate a popup to a same-origin page: no browsing context group switch, no report.
+  [SAME_ORIGIN, `same-origin; report-to="${popupReportEndpoint.name}"`, "", true, [], [
+    {
+      "endpoint": reportEndpoint, "report": {
+        "body": {
+          "disposition": "enforce",
+          "document-uri": `${location.href}`,
+          "effective-policy": "same-origin",
+          "navigation-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+          "violation-type": "navigation-from-document"
+        },
+        "url": `${location.href}`,
+        "type": "coop"
+      }
+    },
+    {
+      "endpoint": popupReportEndpoint, "report": {
+        "body": {
+          "disposition": "enforce",
+          "document-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+          "effective-policy": "same-origin",
+          "navigation-uri": `${location.href}`,
+          "violation-type": "navigation-to-document"
+        },
+        "url": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+        "type": "coop"
+      }
+    }
+  ]
+  ],
+  // Cross origin popup, report the browsing context group switch to all required endpoints.
+  [CROSS_ORIGIN, `same-origin; report-to="${popupReportEndpoint.name}"`, "", false, [
+    {
+      "endpoint": reportEndpoint, "report": {
+        "body": {
+          "disposition": "enforce",
+          "document-uri": `${location.href}`,
+          "effective-policy": "same-origin",
+          "navigation-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/, // initial navigation URL
+          "violation-type": "navigation-from-document"
+        },
+        "url": `${location.href}`,
+        "type": "coop"
+      }
+    },
+    {
+      "endpoint": popupReportEndpoint, "report": {
+        "body": {
+          "disposition": "enforce",
+          "document-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+          "effective-policy": "same-origin",
+          "navigation-uri": `${location.href}`, // referrer
+          "violation-type": "navigation-to-document"
+        },
+        "url": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+        "type": "coop"
+      }
+    }
+  ],
+    []
+  ],
+  // Open and navigate a popup to a same-origin without COOP page: two reports.
+  // Verifies that unsafe-none can specify a reporting endpoint.
+  [SAME_ORIGIN, `unsafe-none; report-to="${popupReportEndpoint.name}"`, "", false, [
+    {
+      "endpoint": reportEndpoint, "report": {
+        "body": {
+          "disposition": "enforce",
+          "document-uri": `${location.href}`,
+          "effective-policy": "same-origin",
+          "navigation-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+          "violation-type": "navigation-from-document"
+        },
+        "url": `${location.href}`,
+        "type": "coop"
+      }
+    },
+    {
+      "endpoint": popupReportEndpoint, "report": {
+        "body": {
+          "disposition": "enforce",
+          "document-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+          "effective-policy": "unsafe-none",
+          "navigation-uri": `${location.href}`,
+          "violation-type": "navigation-to-document"
+        },
+        "url": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+        "type": "coop"
+      }
+    }
+  ],
+    []
+  ],
+  // Cross origin popup, report the browsing context group switch to all required endpoints.
+  // Verifies that unsafe-none can specify a reporting endpoint.
+  [CROSS_ORIGIN, `unsafe-none; report-to="${popupReportEndpoint.name}"`, "", false, [
+    {
+      "endpoint": reportEndpoint, "report": {
+        "body": {
+          "disposition": "enforce",
+          "document-uri": `${location.href}`,
+          "effective-policy": "same-origin",
+          "navigation-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/, // initial navigation URL
+          "violation-type": "navigation-from-document"
+        },
+        "url": `${location.href}`,
+        "type": "coop"
+      }
+    },
+    {
+      "endpoint": popupReportEndpoint, "report": {
+        "body": {
+          "disposition": "enforce",
+          "document-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+          "effective-policy": "unsafe-none",
+          "navigation-uri": `${location.href}`, // referrer
+          "violation-type": "navigation-to-document"
+        },
+        "url": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+        "type": "coop"
+      }
+    }
+  ],
+    []
+  ],
+  // Same origin popup, without COOP or reporting, report only sent to opener.
+  [SAME_ORIGIN, "unsafe-none", "", false,
+    [
+      {
+        "endpoint": reportEndpoint, "report": {
+          "body": {
+            "disposition": "enforce",
+            "document-uri": `${location.href}`,
+            "effective-policy": "same-origin",
+            "navigation-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+            "violation-type": "navigation-from-document"
+          },
+          "url": `${location.href}`,
+          "type": "coop"
+        }
+      }
+    ],
+    [
+      {
+        "endpoint": popupReportEndpoint, "report": {
+          "body": {
+            "disposition": "enforce",
+            "document-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+            "effective-policy": "unsafe-none",
+            "navigation-uri": `${location.href}`,
+            "violation-type": "navigation-to-document"
+          },
+          "url": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+          "type": "coop"
+        }
+      }
+    ]
+  ],
+  // Cross origin popup, without COOP or reporting, report only sent to opener.
+  [CROSS_ORIGIN, "unsafe-none", "", false,
+    [
+      {
+        "endpoint": reportEndpoint, "report": {
+          "body": {
+            "disposition": "enforce",
+            "document-uri": `${location.href}`,
+            "effective-policy": "same-origin",
+            "navigation-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+            "violation-type": "navigation-from-document"
+          },
+          "url": `${location.href}`,
+          "type": "coop"
+        }
+      }
+    ],
+    [
+      {
+        "endpoint": popupReportEndpoint, "report": {
+          "body": {
+            "disposition": "enforce",
+            "document-uri": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+            "effective-policy": "unsafe-none",
+            "navigation-uri": `${location.href}`,
+            "violation-type": "navigation-to-document"
+          },
+          "url": /coop-coep.py?.*channel=CHANNEL_NAME$/,
+          "type": "coop"
+        }
+      }
+    ]
+  ],
+];
+
+run_coop_reporting_test(document.title, tests);
+
+</script>
