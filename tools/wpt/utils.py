@@ -6,7 +6,7 @@ import zipfile
 from io import BytesIO
 
 try:
-    from typing import Any, Callable
+    from typing import Any, Callable, Dict
 except ImportError:
     pass
 
@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class Kwargs(dict):
+    # type: Dict[Any, Any]
     def set_if_none(self,
                     name,            # type: str
                     value,           # type: Any

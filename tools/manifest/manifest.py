@@ -58,14 +58,14 @@ class InvalidCacheError(Exception):
     pass
 
 
-item_classes = {"testharness": TestharnessTest,
-                "reftest": RefTest,
-                "crashtest": CrashTest,
-                "manual": ManualTest,
-                "wdspec": WebDriverSpecTest,
-                "conformancechecker": ConformanceCheckerTest,
-                "visual": VisualTest,
-                "support": SupportFile}  # type: Dict[str, Type[ManifestItem]]
+item_classes = {u"testharness": TestharnessTest,
+                u"reftest": RefTest,
+                u"crashtest": CrashTest,
+                u"manual": ManualTest,
+                u"wdspec": WebDriverSpecTest,
+                u"conformancechecker": ConformanceCheckerTest,
+                u"visual": VisualTest,
+                u"support": SupportFile}  # type: Dict[Text, Type[ManifestItem]]
 
 
 def compute_manifest_items(source_file):
@@ -94,7 +94,7 @@ class ManifestData(ManifestDataType):
         self.json_obj = None  # type: None
 
     def __setitem__(self, key, value):
-        # type: (str, TypeData) -> None
+        # type: (Text, TypeData) -> None
         if self.initialized:
             raise AttributeError
         dict.__setitem__(self, key, value)
@@ -110,7 +110,7 @@ class ManifestData(ManifestDataType):
         return rv
 
     def type_by_path(self):
-        # type: () -> Dict[Tuple[Text, ...], str]
+        # type: () -> Dict[Tuple[Text, ...], Text]
         rv = {}
         for item_type, item_data in iteritems(self):
             for item in item_data:
@@ -118,26 +118,25 @@ class ManifestData(ManifestDataType):
         return rv
 
 
-
 class Manifest(object):
-    def __init__(self, tests_root=None, url_base="/"):
-        # type: (Optional[str], Text) -> None
+    def __init__(self, tests_root, url_base="/"):
+        # type: (Text, Text) -> None
         assert url_base is not None
         self._data = ManifestData(self)  # type: ManifestData
-        self.tests_root = tests_root  # type: Optional[str]
+        self.tests_root = tests_root  # type: Text
         self.url_base = url_base  # type: Text
 
     def __iter__(self):
-        # type: () -> Iterator[Tuple[str, Text, Set[ManifestItem]]]
+        # type: () -> Iterator[Tuple[Text, Text, Set[ManifestItem]]]
         return self.itertypes()
 
     def itertypes(self, *types):
-        # type: (*str) -> Iterator[Tuple[str, Text, Set[ManifestItem]]]
+        # type: (*Text) -> Iterator[Tuple[Text, Text, Set[ManifestItem]]]
         for item_type in (types or sorted(self._data.keys())):
             for path in self._data[item_type]:
-                str_path = os.sep.join(path)
+                rel_path = os.sep.join(path)
                 tests = self._data[item_type][path]
-                yield item_type, str_path, tests
+                yield item_type, rel_path, tests
 
     def iterpath(self, path):
         # type: (Text) -> Iterable[ManifestItem]
@@ -161,7 +160,7 @@ class Manifest(object):
                         yield test
 
     def update(self, tree, parallel=True):
-        # type: (Iterable[Tuple[Union[SourceFile, bytes], bool]], bool) -> bool
+        # type: (Iterable[Tuple[Text, Optional[Text], bool]], bool) -> bool
         """Update the manifest given an iterable of items that make up the updated manifest.
 
         The iterable must either generate tuples of the form (SourceFile, True) for paths
@@ -181,9 +180,7 @@ class Manifest(object):
 
         to_update = []
 
-        for path_str, file_hash, updated in tree:
-            assert isinstance(path_str, (binary_type, text_type))
-            path = ensure_text(path_str)
+        for path, file_hash, updated in tree:
             path_parts = tuple(path.split(os.path.sep))
             is_new = path_parts not in remaining_manifest_paths
 
@@ -198,6 +195,7 @@ class Manifest(object):
             if not updated:
                 remaining_manifest_paths.remove(path_parts)
             else:
+                assert self.tests_root is not None
                 source_file = SourceFile(self.tests_root,
                                          path,
                                          self.url_base,
@@ -280,7 +278,7 @@ class Manifest(object):
 
     @classmethod
     def from_json(cls, tests_root, obj, types=None, callee_owns_obj=False):
-        # type: (str, Dict[Text, Any], Optional[Container[Text]], bool) -> Manifest
+        # type: (Text, Dict[Text, Any], Optional[Container[Text]], bool) -> Manifest
         """Load a manifest from a JSON object
 
         This loads a manifest for a given local test_root path from an
@@ -317,19 +315,19 @@ class Manifest(object):
 
 
 def load(tests_root, manifest, types=None):
-    # type: (str, Union[IO[bytes], str], Optional[Container[Text]]) -> Optional[Manifest]
+    # type: (Text, Union[IO[bytes], Text], Optional[Container[Text]]) -> Optional[Manifest]
     logger = get_logger()
 
     logger.warning("Prefer load_and_update instead")
     return _load(logger, tests_root, manifest, types)
 
 
-__load_cache = {}  # type: Dict[str, Manifest]
+__load_cache = {}  # type: Dict[Text, Manifest]
 
 
 def _load(logger,  # type: Logger
-          tests_root,  # type: str
-          manifest,  # type: Union[IO[bytes], str]
+          tests_root,  # type: Text
+          manifest,  # type: Union[IO[bytes], Text]
           types=None,  # type: Optional[Container[Text]]
           allow_cached=True  # type: bool
           ):
@@ -366,13 +364,13 @@ def _load(logger,  # type: Logger
     return rv
 
 
-def load_and_update(tests_root,  # type: bytes
-                    manifest_path,  # type: bytes
+def load_and_update(tests_root,  # type: Union[Text, bytes]
+                    manifest_path,  # type: Union[Text, bytes]
                     url_base,  # type: Text
                     update=True,  # type: bool
                     rebuild=False,  # type: bool
-                    metadata_path=None,  # type: Optional[bytes]
-                    cache_root=None,  # type: Optional[bytes]
+                    metadata_path=None,  # type: Optional[Union[Text, bytes]]
+                    cache_root=None,  # type: Optional[Union[Text, bytes]]
                     working_copy=True,  # type: bool
                     types=None,  # type: Optional[Container[Text]]
                     write_manifest=True,  # type: bool
@@ -380,6 +378,43 @@ def load_and_update(tests_root,  # type: bytes
                     parallel=True  # type: bool
                     ):
     # type: (...) -> Manifest
+
+    # This function is now a facade for the purposes of type conversion, so that
+    # the external API can accept paths as text or (utf8) bytes, but internal
+    # functions always use Text.
+
+    metadata_path_text = ensure_text(metadata_path) if metadata_path is not None else None
+    cache_root_text = ensure_text(cache_root) if cache_root is not None else None
+
+    return _load_and_update(ensure_text(tests_root),
+                            ensure_text(manifest_path),
+                            url_base,
+                            update=update,
+                            rebuild=rebuild,
+                            metadata_path=metadata_path_text,
+                            cache_root=cache_root_text,
+                            working_copy=working_copy,
+                            types=types,
+                            write_manifest=write_manifest,
+                            allow_cached=allow_cached,
+                            parallel=parallel)
+
+
+def _load_and_update(tests_root,  # type: Text
+                     manifest_path,  # type: Text
+                     url_base,  # type: Text
+                     update=True,  # type: bool
+                     rebuild=False,  # type: bool
+                     metadata_path=None,  # type: Optional[Text]
+                     cache_root=None,  # type: Optional[Text]
+                     working_copy=True,  # type: bool
+                     types=None,  # type: Optional[Container[Text]]
+                     write_manifest=True,  # type: bool
+                     allow_cached=True,  # type: bool
+                     parallel=True  # type: bool
+                     ):
+    # type: (...) -> Manifest
+
     logger = get_logger()
 
     manifest = None
@@ -423,7 +458,7 @@ def load_and_update(tests_root,  # type: bytes
 
 
 def write(manifest, manifest_path):
-    # type: (Manifest, bytes) -> None
+    # type: (Manifest, Text) -> None
     dir_name = os.path.dirname(manifest_path)
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)

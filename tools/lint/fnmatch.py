@@ -9,20 +9,21 @@ if MYPY:
     from typing import AnyStr
     from typing import Iterable
     from typing import List
+    from typing import Text
 
 
 __all__ = ["fnmatch", "fnmatchcase", "filter", "translate"]
 
 
 def fnmatch(name, pat):
-    # type: (AnyStr, AnyStr) -> bool
+    # type: (Text, Text) -> bool
     name = os.path.normcase(name)
     pat = os.path.normcase(pat)
     return fnmatchcase(name, pat)
 
 
 def fnmatchcase(name, pat):
-    # type: (AnyStr, AnyStr) -> bool
+    # type: (Text, Text) -> bool
     if '?' not in pat and '[' not in pat:
         wildcards = pat.count("*")
         if wildcards == 0:
@@ -35,7 +36,7 @@ def fnmatchcase(name, pat):
 
 
 def filter(names, pat):
-    # type: (Iterable[AnyStr], AnyStr) -> List[AnyStr]
+    # type: (Iterable[Text], Text) -> List[Text]
     return [n for n in names if fnmatch(n, pat)]
 
 
