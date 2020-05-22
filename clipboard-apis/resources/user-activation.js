@@ -1,7 +1,8 @@
 'use strict';
 
 // In order to use this function, please import testdriver.js and
-// testdriver-vendor.js, and include a <body> element.
+// testdriver-vendor.js, and include a <body> element. This only works on the
+// top-level frame.
 async function waitForUserActivation() {
   const loadedPromise = new Promise(resolve => {
     if(document.readyState == 'complete') {
