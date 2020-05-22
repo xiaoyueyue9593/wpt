@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Verify timeline time, animation time, effect time and effect value for all fill modes in all timeline states: before start, at start, in range, at end, after end while using various effect delay values</title>
+<meta name="timeout" content="long">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/web-animations/testcommon.js"></script>
+<script src="testcommon.js"></script>
+<style>
+  .scroller {
+    overflow: auto;
+    height: 100px;
+    width: 100px;
+  }
+  .contents {
+    height: 1000px;
+    width: 100%;
+  }
+</style>
+<div id="log"></div>
+<script>
+  'use strict';
+
+  // These are the expected property values for the opacity on the target
+  // element in all timing situations and all fill modes.
+  // Cases are included where effect delay causes the effect iteration to
+  // overlap with the timeline start time and also the timeline ene time.
+  //                  Timeline
+  //   BEFORE   +-----------------+     AFTER
+  //   time:    0                 timeRange
+  //   1)            +-------+
+  //   2)                      +------+
+  //   3)   +------+
+  // This results in a triple for-loop, but gives the best test coverage for
+  // the intersection of these features.
+  const effect_delays = {
+    // Effect delay causes entire effect to be within the active timeline range
+    "100": {
+      scroll_amounts: {
+        before_timeline_start_offset: {
+          scroll_percent: 0.1,
+          timeline_current_time: 0,
+          animation_current_time: 0,
+          effect_local_time: 0
+        },
+        at_timeline_start: {
+          scroll_percent: 0.2,
+          timeline_current_time: 0,
+          animation_current_time: 0,
+          effect_local_time: 0
+        },
+        before_effect_delay: {
+          scroll_percent: 0.25,
+          timeline_current_time: 83.333,
+          animation_current_time: 83.333,
+          effect_local_time: 83.333
+        },
+        at_effect_start: {
+          scroll_percent: 0.26,
+          timeline_current_time: 100,
+          animation_current_time: 100,
+          effect_local_time: 100
+        },
+        in_timeline_range: {
+          scroll_percent: 0.5,
+          timeline_current_time: 500,
+          animation_current_time: 500,
+          effect_local_time: 500
+        },
+        at_effect_end: {
+          scroll_percent: 0.62,
+          timeline_current_time: 700,
+          animation_current_time: 700,
+          effect_local_time: 700
+        },
+        after_effect_end: {
+          scroll_percent: 0.65,
+          timeline_current_time: 750,
+          animation_current_time: 700,
+          effect_local_time: 700
+        },
+        at_timeline_end_offset: {
+          scroll_percent: 0.8,
+          timeline_current_time: 1000,
+          animation_current_time: 700,
+          effect_local_time: 700
+        },
+        after_timeline_end_offset: {
+          scroll_percent: 0.9,
+          timeline_current_time: 1000,
+          animation_current_time: 700,
+          effect_local_time: 700
+        },
+      },
+      fill_modes: {
+        "none": {
+          before_timeline_start_offset: "1",
+          at_timeline_start: "1",
+          before_effect_delay: "1",
+          at_effect_start: "0.3",
+          in_timeline_range: "0.566667",
+          // Note: The below values should NOT be inclusive since a timeline
+          // endScrollOffset is being used, if it were default, the "at end"
+          // values would need to be 0.7, or the last keyframe for the effect.
+          at_effect_end: "1",
+          after_effect_end: "1",
+          at_timeline_end_offset: "1",
+          after_timeline_end_offset: "1",
+        },
+        "backwards": {
+          before_timeline_start_offset: "0.3",
+          at_timeline_start: "0.3",
+          before_effect_delay: "0.3",
+          at_effect_start: "0.3",
+          in_timeline_range: "0.566667",
+          at_effect_end: "1",
+          after_effect_end: "1",
+          at_timeline_end_offset: "1",
+          after_timeline_end_offset: "1",
+        },
+        "forwards": {
+          before_timeline_start_offset: "1",
+          at_timeline_start: "1",
+          before_effect_delay: "1",
+          at_effect_start: "0.3",
+          in_timeline_range: "0.566667",
+          at_effect_end: "0.7",
+          after_effect_end: "0.7",
+          at_timeline_end_offset: "0.7",
+          after_timeline_end_offset: "0.7",
+        },
+        "both": {
+          before_timeline_start_offset: "0.3",
+          at_timeline_start: "0.3",
+          before_effect_delay: "0.3",
+          at_effect_start: "0.3",
+          in_timeline_range: "0.566667",
+          at_effect_end: "0.7",
+          after_effect_end: "0.7",
+          at_timeline_end_offset: "0.7",
+          after_timeline_end_offset: "0.7",
+        },
+      }
+    },
+    // Effect delay is large enough to cause the effect to not finish before the
+    // timeline.
+    "500": {
+      scroll_amounts: {
+        before_timeline_start_offset: {
+          scroll_percent: 0.1,
+          timeline_current_time: 0,
+          animation_current_time: 0,
+          effect_local_time: 0
+        },
+        at_timeline_start: {
+          scroll_percent: 0.2,
+          timeline_current_time: 0,
+          animation_current_time: 0,
+          effect_local_time: 0
+        },
+        before_effect_delay: {
+          scroll_percent: 0.25,
+          timeline_current_time: 83.333,
+          animation_current_time: 83.333,
+          effect_local_time: 83.333
+        },
+        at_effect_start: {
+          scroll_percent: 0.5,
+          timeline_current_time: 500,
+          animation_current_time: 500,
+          effect_local_time: 500
+        },
+        in_timeline_range: {
+          scroll_percent: 0.65,
+          timeline_current_time: 750,
+          animation_current_time: 750,
+          effect_local_time: 750
+        },
+        at_timeline_end_offset: {
+          scroll_percent: 0.8,
+          timeline_current_time: 1000,
+          animation_current_time: 1000,
+          effect_local_time: 1000
+        },
+        after_timeline_end_offset: {
+          scroll_percent: 0.9,
+          timeline_current_time: 1000,
+          animation_current_time: 1000,
+          effect_local_time: 1000
+        },
+        // Cannot scroll past the end of the scroller and therefore cannot
+        // reach the effect end, so at timeline end and after timeline end
+        // states are not included.
+      },
+      // Values at timeline end and after the offset are always clamped here
+      // since the effect doesn't ever finish.
+      fill_modes: {
+        "none": {
+          before_timeline_start_offset: "1",
+          at_timeline_start: "1",
+          before_effect_delay: "1",
+          at_effect_start: "0.3",
+          in_timeline_range: "0.466667",
+          at_timeline_end_offset: "1",
+          after_timeline_end_offset: "1",
+        },
+        "backwards": {
+          before_timeline_start_offset: "0.3",
+          at_timeline_start: "0.3",
+          before_effect_delay: "0.3",
+          at_effect_start: "0.3",
+          in_timeline_range: "0.466667",
+          at_timeline_end_offset: "1",
+          after_timeline_end_offset: "1",
+        },
+        "forwards": {
+          before_timeline_start_offset: "1",
+          at_timeline_start: "1",
+          before_effect_delay: "1",
+          at_effect_start: "0.3",
+          in_timeline_range: "0.466667",
+          at_timeline_end_offset: "0.633333",
+          after_timeline_end_offset: "0.633333",
+        },
+        "both": {
+          before_timeline_start_offset: "0.3",
+          at_timeline_start: "0.3",
+          before_effect_delay: "0.3",
+          at_effect_start: "0.3",
+          in_timeline_range: "0.466667",
+          at_timeline_end_offset: "0.633333",
+          after_timeline_end_offset: "0.633333",
+        },
+      }
+    },
+
+    // Effect delay is negative causes effect to snap to corresponding value
+    // when timeline enters active phase
+    "-100": {
+      scroll_amounts: {
+        // Because of the negative delay, the effect start occurs while the
+        // timeline is in the before phase, the effect will be clamped (based on
+        // fill mode) to the value it would be at when the timeline starts.
+        // Because of this, we can't check scroll values for before effect
+        // start and at effect start.
+        before_timeline_start_offset: {
+          scroll_percent: 0.1,
+          timeline_current_time: 0,
+          animation_current_time: 0,
+          effect_local_time: 0
+        },
+        at_timeline_start: {
+          scroll_percent: 0.2,
+          timeline_current_time: 0,
+          animation_current_time: 0,
+          effect_local_time: 0
+        },
+        in_timeline_range: {
+          scroll_percent: 0.3,
+          timeline_current_time: 166.666,
+          animation_current_time: 166.666,
+          effect_local_time: 166.666
+        },
+        at_effect_end: {
+          scroll_percent: 0.5,
+          timeline_current_time: 500,
+          animation_current_time: 500,
+          effect_local_time: 500
+        },
+        after_effect_end: {
+          scroll_percent: 0.51,
+          timeline_current_time: 516.666,
+          animation_current_time: 500,
+          effect_local_time: 500
+        },
+        at_timeline_end_offset: {
+          scroll_percent: 0.8,
+          timeline_current_time: 1000,
+          animation_current_time: 500,
+          effect_local_time: 500
+        },
+        after_timeline_end_offset: {
+          scroll_percent: 0.9,
+          timeline_current_time: 1000,
+          animation_current_time: 500,
+          effect_local_time: 500
+        },
+      },
+      fill_modes: {
+        "none": {
+          before_timeline_start_offset: "1",
+          at_timeline_start: "0.366667",
+          in_timeline_range: "0.477777",
+          // Note: The below values should NOT be inclusive since a timeline
+          // endScrollOffset is being used, if it were default, the "at end"
+          // values would need to be 0.7, or the last keyframe for the effect.
+          at_effect_end: "1",
+          after_effect_end: "1",
+          at_timeline_end_offset: "1",
+          after_timeline_end_offset: "1",
+        },
+        "backwards": {
+          before_timeline_start_offset: "0.366667",
+          at_timeline_start: "0.366667",
+          in_timeline_range: "0.477777",
+          at_effect_end: "1",
+          after_effect_end: "1",
+          at_timeline_end_offset: "1",
+          after_timeline_end_offset: "1",
+        },
+        "forwards": {
+          before_timeline_start_offset: "1",
+          at_timeline_start: "0.366667",
+          in_timeline_range: "0.477777",
+          at_effect_end: "0.7",
+          after_effect_end: "0.7",
+          at_timeline_end_offset: "0.7",
+          after_timeline_end_offset: "0.7",
+        },
+        "both": {
+          before_timeline_start_offset: "0.366667",
+          at_timeline_start: "0.366667",
+          in_timeline_range: "0.477777",
+          at_effect_end: "0.7",
+          after_effect_end: "0.7",
+          at_timeline_end_offset: "0.7",
+          after_timeline_end_offset: "0.7",
+        },
+      }
+    }
+  }
+
+  for (const delay in effect_delays) {
+    const effect_delay_data = effect_delays[delay];
+    for (const scroll_amount in effect_delay_data.scroll_amounts){
+      const scroll_amount_data =
+        effect_delay_data.scroll_amounts[scroll_amount];
+      for (const fill_mode in effect_delay_data.fill_modes){
+        const expected_values = effect_delay_data.fill_modes[fill_mode];
+        promise_test(async t => {
+          const target = createDiv(t);
+          const timeline = createScrollTimelineWithOffsets(t, "20%", "80%");
+          const effect = new KeyframeEffect(
+            target,
+            {
+              opacity: [0.3, 0.7]
+            },
+            {
+              duration: 600,
+              fill: fill_mode,
+              delay: parseInt(delay)
+            }
+          );
+          const animation = new Animation(effect, timeline);
+          const scroller = timeline.scrollSource;
+          const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+
+          animation.play();
+
+          await animation.ready;
+
+          scroller.scrollTop = scroll_amount_data.scroll_percent * maxScroll;
+
+          // Wait for new animation frame which allows the timeline to compute
+          // new current time.
+          await waitForNextFrame();
+
+          const tolerance = 0.001;
+          assert_approx_equals(
+            animation.timeline.currentTime,
+            scroll_amount_data.timeline_current_time,
+            tolerance,
+            "timeline current time"
+          );
+          assert_approx_equals(
+            animation.currentTime,
+            scroll_amount_data.animation_current_time,
+            tolerance,
+            "animation current time"
+          );
+          assert_approx_equals(
+            animation.effect.getComputedTiming().localTime,
+            scroll_amount_data.effect_local_time,
+            tolerance,
+            "animation effect local time"
+          );
+          assert_equals(
+            window.getComputedStyle(target).getPropertyValue("opacity"),
+            expected_values[scroll_amount],
+            "effect value");
+        }, "Current times and effect value for | effect delay = " +delay+
+        " | " + scroll_amount + " | fill mode = \""+fill_mode+"\" |");
+      }
+    }
+  }
+</script>
